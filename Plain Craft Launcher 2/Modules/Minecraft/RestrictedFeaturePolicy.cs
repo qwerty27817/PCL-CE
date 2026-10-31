@@ -1,33 +1,23 @@
-using PCL.Core.App.Localization;
-using PCL.Core.UI.Hints;
 using PCL.Core.App.Region;
 
 namespace PCL;
 
+/// <summary>
+///     本地分支补丁：停用上游 #3673 引入的中国大陆区域限制。
+///     保留该类型及其签名，使上游所有调用点保持编译通过，便于后续继续同步上游。
+/// </summary>
 internal static class RestrictedFeaturePolicy
 {
-    internal static RegionAssessment Assess() => RegionPolicy.Evaluate(RegionPolicy.ReadWindowsSignals());
+    private static readonly RegionAssessment DisabledAssessment =
+        new(RegionClassification.Other, "region-policy-disabled");
 
-    internal static bool IsRestricted => Assess().IsRestricted;
+    internal static RegionAssessment Assess() => DisabledAssessment;
 
-    internal static bool Check(string feature, bool showHint = true)
-    {
-        var assessment = Assess();
-        if (!assessment.IsRestricted) return true;
+    internal static bool IsRestricted => false;
 
-        Common.Log($"[RegionPolicy] 已阻止功能 {feature}，判定原因：{assessment.Reason}");
-        if (showHint)
-        {
-            HintService.Show(Hints.Error(Lang.Text(assessment.Classification == RegionClassification.Unknown
-                ? "Region.Feature.Unknown"
-                : "Region.Feature.Restricted")));
-        }
-        return false;
-    }
+    internal static bool Check(string feature, bool showHint = true) => true;
 
     internal static void ThrowIfRestricted(string feature)
     {
-        if (Check(feature, false)) return;
-        throw new Common.CancelledException();
     }
 }
